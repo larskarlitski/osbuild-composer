@@ -10,14 +10,22 @@ import (
 
 	"github.com/osbuild/osbuild-composer/internal/distro"
 	"github.com/osbuild/osbuild-composer/internal/distro/fedoratest"
-	"github.com/osbuild/osbuild-composer/internal/jobqueue/testjobqueue"
+	"github.com/osbuild/osbuild-composer/internal/jobqueue/fsjobqueue"
 	"github.com/osbuild/osbuild-composer/internal/test"
 	"github.com/osbuild/osbuild-composer/internal/worker"
 )
 
+func newTestServer(t *testing.T) *worker.Server {
+	q, err := fsjobqueue.New(t.TempDir())
+	if err != nil {
+		t.Fatalf("error creating fsjobqueue: %v", err)
+	}
+	return worker.NewServer(nil, q, "")
+}
+
 // Ensure that the status request returns OK.
 func TestStatus(t *testing.T) {
-	server := worker.NewServer(nil, testjobqueue.New(), "")
+	server := newTestServer(t)
 	handler := server.Handler()
 	test.TestRoute(t, handler, false, "GET", "/api/worker/v1/status", ``, http.StatusOK, `{"status":"OK"}`, "message")
 }
@@ -44,7 +52,7 @@ func TestErrors(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		server := worker.NewServer(nil, testjobqueue.New(), "")
+		server := newTestServer(t)
 		handler := server.Handler()
 		test.TestRoute(t, handler, false, c.Method, c.Path, c.Body, c.ExpectedStatus, "{}", "message")
 	}
@@ -64,7 +72,7 @@ func TestCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating osbuild manifest")
 	}
-	server := worker.NewServer(nil, testjobqueue.New(), "")
+	server := newTestServer(t)
 	handler := server.Handler()
 
 	_, err = server.EnqueueOSBuild(arch.Name(), &worker.OSBuildJob{Manifest: manifest})
@@ -88,7 +96,7 @@ func TestCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating osbuild manifest")
 	}
-	server := worker.NewServer(nil, testjobqueue.New(), "")
+	server := newTestServer(t)
 	handler := server.Handler()
 
 	jobId, err := server.EnqueueOSBuild(arch.Name(), &worker.OSBuildJob{Manifest: manifest})
@@ -125,7 +133,7 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating osbuild manifest")
 	}
-	server := worker.NewServer(nil, testjobqueue.New(), "")
+	server := newTestServer(t)
 	handler := server.Handler()
 
 	jobId, err := server.EnqueueOSBuild(arch.Name(), &worker.OSBuildJob{Manifest: manifest})
@@ -156,7 +164,7 @@ func TestUpload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating osbuild manifest")
 	}
-	server := worker.NewServer(nil, testjobqueue.New(), "")
+	server := newTestServer(t)
 	handler := server.Handler()
 
 	jobID, err := server.EnqueueOSBuild(arch.Name(), &worker.OSBuildJob{Manifest: manifest})

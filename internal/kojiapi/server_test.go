@@ -24,7 +24,7 @@ import (
 )
 
 func newTestKojiServer(t *testing.T, dir string) (*kojiapi.Server, *worker.Server) {
-	rpm_fixture := rpmmd_mock.BaseFixture()
+	rpm_fixture := rpmmd_mock.BaseFixture(t.TempDir())
 	rpm := rpmmd_mock.NewRPMMDMock(rpm_fixture)
 	require.NotNil(t, rpm)
 

@@ -5,14 +5,14 @@ import (
 	"sort"
 	"time"
 
-	"github.com/osbuild/osbuild-composer/internal/jobqueue/testjobqueue"
+	"github.com/osbuild/osbuild-composer/internal/jobqueue/fsjobqueue"
 	"github.com/osbuild/osbuild-composer/internal/worker"
 
 	"github.com/osbuild/osbuild-composer/internal/rpmmd"
 	"github.com/osbuild/osbuild-composer/internal/store"
 )
 
-type FixtureGenerator func() Fixture
+type FixtureGenerator func(tmpdir string) Fixture
 
 func generatePackageList() rpmmd.PackageList {
 	baseTime, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05Z")
@@ -52,8 +52,12 @@ func generatePackageList() rpmmd.PackageList {
 	return packageList
 }
 
-func createBaseWorkersFixture() *worker.Server {
-	return worker.NewServer(nil, testjobqueue.New(), "")
+func createBaseWorkersFixture(tmpdir string) *worker.Server {
+	q, err := fsjobqueue.New(tmpdir)
+	if err != nil {
+		panic(err)
+	}
+	return worker.NewServer(nil, q, "")
 }
 
 func createBaseDepsolveFixture() []rpmmd.PackageSpec {
@@ -82,7 +86,7 @@ func createBaseDepsolveFixture() []rpmmd.PackageSpec {
 	}
 }
 
-func BaseFixture() Fixture {
+func BaseFixture(tmpdir string) Fixture {
 	return Fixture{
 		fetchPackageList{
 			generatePackageList(),
@@ -95,11 +99,11 @@ func BaseFixture() Fixture {
 			nil,
 		},
 		store.FixtureBase(),
-		createBaseWorkersFixture(),
+		createBaseWorkersFixture(tmpdir),
 	}
 }
 
-func NoComposesFixture() Fixture {
+func NoComposesFixture(tmpdir string) Fixture {
 	return Fixture{
 		fetchPackageList{
 			generatePackageList(),
@@ -112,11 +116,11 @@ func NoComposesFixture() Fixture {
 			nil,
 		},
 		store.FixtureEmpty(),
-		createBaseWorkersFixture(),
+		createBaseWorkersFixture(tmpdir),
 	}
 }
 
-func NonExistingPackage() Fixture {
+func NonExistingPackage(tmpdir string) Fixture {
 	return Fixture{
 		fetchPackageList{
 			generatePackageList(),
@@ -132,11 +136,11 @@ func NonExistingPackage() Fixture {
 			},
 		},
 		store.FixtureBase(),
-		createBaseWorkersFixture(),
+		createBaseWorkersFixture(tmpdir),
 	}
 }
 
-func BadDepsolve() Fixture {
+func BadDepsolve(tmpdir string) Fixture {
 	return Fixture{
 		fetchPackageList{
 			generatePackageList(),
@@ -152,11 +156,11 @@ func BadDepsolve() Fixture {
 			},
 		},
 		store.FixtureBase(),
-		createBaseWorkersFixture(),
+		createBaseWorkersFixture(tmpdir),
 	}
 }
 
-func BadFetch() Fixture {
+func BadFetch(tmpdir string) Fixture {
 	return Fixture{
 		fetchPackageList{
 			ret:       nil,
@@ -175,6 +179,6 @@ func BadFetch() Fixture {
 			},
 		},
 		store.FixtureBase(),
-		createBaseWorkersFixture(),
+		createBaseWorkersFixture(tmpdir),
 	}
 }

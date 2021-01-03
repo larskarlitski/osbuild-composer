@@ -37,7 +37,11 @@ func executeTests(m *testing.M) int {
 	}
 
 	// Create a mock API server listening on the temporary socket
-	fixture := rpmmd_mock.BaseFixture()
+	err = os.Mkdir(tmpdir+"/jobs", 0755)
+	if err != nil {
+		panic(err)
+	}
+	fixture := rpmmd_mock.BaseFixture(tmpdir + "/jobs")
 	rpm := rpmmd_mock.NewRPMMDMock(fixture)
 	distro := fedoratest.New()
 	arch, err := distro.GetArch("x86_64")

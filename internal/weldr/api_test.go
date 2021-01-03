@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createWeldrAPI(fixtureGenerator rpmmd_mock.FixtureGenerator) (*API, *store.Store) {
-	fixture := fixtureGenerator()
+func createWeldrAPI(t *testing.T, fixtureGenerator rpmmd_mock.FixtureGenerator) (*API, *store.Store) {
+	fixture := fixtureGenerator(t.TempDir())
 	rpm := rpmmd_mock.NewRPMMDMock(fixture)
 	repos := []rpmmd.RepoConfig{{Name: "test-id", BaseURL: "http://example.com/test/os/x86_64", CheckGPG: true}}
 	d := test_distro.New()
@@ -62,7 +62,7 @@ func TestBasic(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestRoute(t, api, true, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
@@ -83,7 +83,7 @@ func TestBlueprintsNew(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestRoute(t, api, true, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
@@ -102,7 +102,7 @@ version = "2.4.*"`
 	req.Header.Set("Content-Type", "text/x-toml")
 	recorder := httptest.NewRecorder()
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	api.ServeHTTP(recorder, req)
 
 	r := recorder.Result()
@@ -114,7 +114,7 @@ func TestBlueprintsEmptyToml(t *testing.T) {
 	req.Header.Set("Content-Type", "text/x-toml")
 	recorder := httptest.NewRecorder()
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	api.ServeHTTP(recorder, req)
 
 	r := recorder.Result()
@@ -135,7 +135,7 @@ version = "2.4.*"`
 	req.Header.Set("Content-Type", "text/x-toml")
 	recorder := httptest.NewRecorder()
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	api.ServeHTTP(recorder, req)
 
 	r := recorder.Result()
@@ -156,7 +156,7 @@ func TestBlueprintsWorkspaceJSON(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestRoute(t, api, true, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
@@ -175,7 +175,7 @@ version = "2.4.*"`
 	req.Header.Set("Content-Type", "text/x-toml")
 	recorder := httptest.NewRecorder()
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	api.ServeHTTP(recorder, req)
 
 	r := recorder.Result()
@@ -187,7 +187,7 @@ func TestBlueprintsWorkspaceEmptyTOML(t *testing.T) {
 	req.Header.Set("Content-Type", "text/x-toml")
 	recorder := httptest.NewRecorder()
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	api.ServeHTTP(recorder, req)
 
 	r := recorder.Result()
@@ -208,7 +208,7 @@ version = "2.4.*"`
 	req.Header.Set("Content-Type", "text/x-toml")
 	recorder := httptest.NewRecorder()
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	api.ServeHTTP(recorder, req)
 
 	r := recorder.Result()
@@ -231,7 +231,7 @@ func TestBlueprintsInfo(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.SendHTTP(api, true, "POST", "/api/v0/blueprints/new", `{"name":"test1","description":"Test","packages":[{"name":"httpd","version":"2.4.*"}],"version":"0.0.0"}`)
 		test.SendHTTP(api, true, "POST", "/api/v0/blueprints/new", `{"name":"test2","description":"Test","packages":[{"name":"httpd","version":"2.4.*"}],"version":"0.0.0"}`)
 		test.SendHTTP(api, true, "POST", "/api/v0/blueprints/workspace", `{"name":"test2","description":"Test","packages":[{"name":"systemd","version":"123"}],"version":"0.0.0"}`)
@@ -242,7 +242,7 @@ func TestBlueprintsInfo(t *testing.T) {
 }
 
 func TestBlueprintsInfoToml(t *testing.T) {
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	test.SendHTTP(api, true, "POST", "/api/v0/blueprints/new", `{"name":"test1","description":"Test","packages":[{"name":"httpd","version":"2.4.*"}],"version":"0.0.0"}`)
 
 	req := httptest.NewRequest("GET", "/api/v0/blueprints/info/test1?format=toml", nil)
@@ -272,7 +272,7 @@ func TestBlueprintsInfoToml(t *testing.T) {
 }
 
 func TestNonExistentBlueprintsInfoToml(t *testing.T) {
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	req := httptest.NewRequest("GET", "/api/v0/blueprints/info/test3-non?format=toml", nil)
 	recorder := httptest.NewRecorder()
 	api.ServeHTTP(recorder, req)
@@ -338,7 +338,7 @@ func TestBlueprintsFreeze(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			api, _ := createWeldrAPI(c.Fixture)
+			api, _ := createWeldrAPI(t, c.Fixture)
 			test.SendHTTP(api, false, "POST", "/api/v0/blueprints/new", `{"name":"test","description":"Test","packages":[{"name":"dep-package1","version":"*"},{"name":"dep-package3","version":"*"}], "modules":[{"name":"dep-package2","version":"*"}],"version":"0.0.0"}`)
 			test.SendHTTP(api, false, "POST", "/api/v0/blueprints/new", `{"name":"test2","description":"Test","packages":[{"name":"dep-package1","version":"*"},{"name":"dep-package3","version":"*"}], "modules":[{"name":"dep-package2","version":"*"}],"version":"0.0.0"}`)
 			test.TestRoute(t, api, false, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedJSON)
@@ -357,7 +357,7 @@ func TestBlueprintsFreeze(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			api, _ := createWeldrAPI(c.Fixture)
+			api, _ := createWeldrAPI(t, c.Fixture)
 			test.SendHTTP(api, false, "POST", "/api/v0/blueprints/new", `{"name":"test","description":"Test","packages":[{"name":"dep-package1","version":"*"},{"name":"dep-package3","version":"*"}], "modules":[{"name":"dep-package2","version":"*"}],"version":"0.0.0"}`)
 			test.TestTOMLRoute(t, api, false, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedTOML)
 		}
@@ -374,7 +374,7 @@ func TestBlueprintsFreeze(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			api, _ := createWeldrAPI(c.Fixture)
+			api, _ := createWeldrAPI(t, c.Fixture)
 			test.SendHTTP(api, false, "POST", "/api/v0/blueprints/new", `{"name":"test","description":"Test","packages":[{"name":"dep-package1","version":"*"},{"name":"dep-package3","version":"*"}], "modules":[{"name":"dep-package2","version":"*"}],"version":"0.0.0"}`)
 			test.SendHTTP(api, false, "POST", "/api/v0/blueprints/new", `{"name":"test2","description":"Test","packages":[{"name":"dep-package1","version":"*"},{"name":"dep-package3","version":"*"}], "modules":[{"name":"dep-package2","version":"*"}],"version":"0.0.0"}`)
 			test.TestRoute(t, api, false, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedJSON)
@@ -394,7 +394,7 @@ func TestBlueprintsDiff(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.SendHTTP(api, true, "POST", "/api/v0/blueprints/new", `{"name":"test","description":"Test","packages":[{"name":"httpd","version":"2.4.*"}],"version":"0.0.0"}`)
 		test.SendHTTP(api, true, "POST", "/api/v0/blueprints/workspace", `{"name":"test","description":"Test","packages":[{"name":"systemd","version":"123"}],"version":"0.0.0"}`)
 		test.TestRoute(t, api, true, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON)
@@ -415,7 +415,7 @@ func TestBlueprintsDelete(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.SendHTTP(api, true, "POST", "/api/v0/blueprints/new", `{"name":"test","description":"Test","packages":[{"name":"httpd","version":"2.4.*"}],"version":"0.0.0"}`)
 		test.TestRoute(t, api, true, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON)
 		test.SendHTTP(api, true, "DELETE", "/api/v0/blueprints/delete/test", ``)
@@ -423,7 +423,7 @@ func TestBlueprintsDelete(t *testing.T) {
 }
 
 func TestBlueprintsChanges(t *testing.T) {
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	rand.Seed(time.Now().UnixNano())
 	id := strconv.Itoa(rand.Int())
 	ignoreFields := []string{"commit", "timestamp"}
@@ -449,7 +449,7 @@ func TestBlueprintsDepsolve(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.SendHTTP(api, false, "POST", "/api/v0/blueprints/new", `{"name":"test","description":"Test","packages":[{"name":"dep-package1","version":"*"}],"modules":[{"name":"dep-package3","version":"*"}],"version":"0.0.0"}`)
 		test.TestRoute(t, api, false, "GET", "/api/v0/blueprints/depsolve/test", ``, c.ExpectedStatus, c.ExpectedJSON)
 		test.SendHTTP(api, false, "DELETE", "/api/v0/blueprints/delete/test", ``)
@@ -525,7 +525,7 @@ func TestCompose(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, s := createWeldrAPI(rpmmd_mock.NoComposesFixture)
+		api, s := createWeldrAPI(t, rpmmd_mock.NoComposesFixture)
 		test.TestRoute(t, api, c.External, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON, c.IgnoreFields...)
 
 		if c.ExpectedStatus != http.StatusOK {
@@ -569,7 +569,7 @@ func TestComposeDelete(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, s := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, s := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestRoute(t, api, false, "DELETE", c.Path, "", http.StatusOK, c.ExpectedJSON)
 
 		idsInStore := []string{}
@@ -604,7 +604,7 @@ func TestComposeStatus(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestRoute(t, api, false, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON, "id", "job_created", "job_started")
 	}
 }
@@ -629,7 +629,7 @@ func TestComposeInfo(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestRoute(t, api, false, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
@@ -655,7 +655,7 @@ func TestComposeLogs(t *testing.T) {
 	}
 
 	for _, c := range successCases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 
 		response := test.SendHTTP(api, false, "GET", c.Path, "")
 		require.Equalf(t, http.StatusOK, response.StatusCode, "%s: unexpected status code", c.Path)
@@ -694,7 +694,7 @@ func TestComposeLogs(t *testing.T) {
 	}
 
 	for _, c := range failureCases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestRoute(t, api, false, "GET", c.Path, "", http.StatusBadRequest, c.ExpectedJSON)
 	}
 }
@@ -720,7 +720,7 @@ func TestComposeLog(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestNonJsonRoute(t, api, false, "GET", c.Path, "", c.ExpectedStatus, c.ExpectedResponse)
 	}
 }
@@ -744,7 +744,7 @@ func TestComposeQueue(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.TestRoute(t, api, false, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON, "id", "job_created", "job_started")
 	}
 }
@@ -768,7 +768,7 @@ func TestComposeFinished(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.TestRoute(t, api, false, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON, "id", "job_created", "job_started")
 	}
 }
@@ -792,7 +792,7 @@ func TestComposeFailed(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.TestRoute(t, api, false, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON, "id", "job_created", "job_started")
 	}
 }
@@ -815,7 +815,7 @@ func TestSourcesNew(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.TestRoute(t, api, true, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON)
 		test.SendHTTP(api, true, "DELETE", "/api/v0/projects/source/delete/fish", ``)
 	}
@@ -833,7 +833,7 @@ check_gpg = false
 	req.Header.Set("Content-Type", "text/x-toml")
 	recorder := httptest.NewRecorder()
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	api.ServeHTTP(recorder, req)
 
 	r := recorder.Result()
@@ -857,7 +857,7 @@ check_gpg = false
 		req.Header.Set("Content-Type", "text/x-toml")
 		recorder := httptest.NewRecorder()
 
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		api.ServeHTTP(recorder, req)
 
 		r := recorder.Result()
@@ -868,7 +868,7 @@ check_gpg = false
 func TestSourcesInfo(t *testing.T) {
 	sourceStr := `{"name":"fish","type":"yum-baseurl","url":"https://download.opensuse.org/repositories/shells:/fish:/release:/3/Fedora_29/","check_gpg":false,"check_ssl":false,"system":false}`
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	test.SendHTTP(api, true, "POST", "/api/v0/projects/source/new", sourceStr)
 	test.TestRoute(t, api, true, "GET", "/api/v0/projects/source/info/fish", ``, 200, `{"sources":{"fish":`+sourceStr+`},"errors":[]}`)
 	test.TestRoute(t, api, true, "GET", "/api/v0/projects/source/info/fish?format=json", ``, 200, `{"sources":{"fish":`+sourceStr+`},"errors":[]}`)
@@ -878,7 +878,7 @@ func TestSourcesInfo(t *testing.T) {
 func TestSourcesInfoToml(t *testing.T) {
 	sourceStr := `{"name":"fish","type":"yum-baseurl","url":"https://download.opensuse.org/repositories/shells:/fish:/release:/3/Fedora_29/","check_gpg":false,"check_ssl":false,"system":false}`
 
-	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+	api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 	test.SendHTTP(api, true, "POST", "/api/v0/projects/source/new", sourceStr)
 
 	req := httptest.NewRequest("GET", "/api/v0/projects/source/info/fish?format=toml", nil)
@@ -914,7 +914,7 @@ func TestSourcesDelete(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
+		api, _ := createWeldrAPI(t, rpmmd_mock.BaseFixture)
 		test.SendHTTP(api, true, "POST", "/api/v0/projects/source/new", `{"name": "fish","url": "https://download.opensuse.org/repositories/shells:/fish:/release:/3/Fedora_29/","type": "yum-baseurl","check_ssl": false,"check_gpg": false}`)
 		test.TestRoute(t, api, true, c.Method, c.Path, c.Body, c.ExpectedStatus, c.ExpectedJSON)
 		test.SendHTTP(api, true, "DELETE", "/api/v0/projects/source/delete/fish", ``)
@@ -934,7 +934,7 @@ func TestProjectsDepsolve(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.TestRoute(t, api, true, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
@@ -955,7 +955,7 @@ func TestProjectsInfo(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.TestRoute(t, api, true, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
@@ -977,7 +977,7 @@ func TestModulesInfo(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.TestRoute(t, api, true, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
@@ -996,7 +996,7 @@ func TestProjectsList(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.TestRoute(t, api, true, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
@@ -1018,7 +1018,7 @@ func TestModulesList(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		api, _ := createWeldrAPI(c.Fixture)
+		api, _ := createWeldrAPI(t, c.Fixture)
 		test.TestRoute(t, api, true, "GET", c.Path, ``, c.ExpectedStatus, c.ExpectedJSON)
 	}
 }
