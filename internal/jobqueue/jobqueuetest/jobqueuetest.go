@@ -238,7 +238,7 @@ func testCancel(t *testing.T, q jobqueue.JobQueue) {
 	err = q.FinishJob(id, &testResult{})
 	require.Error(t, err)
 
-	// Cancel a finished job, which is a no-op
+	// Cancel a finished job, which is an error
 	id = pushTestJob(t, q, "clownfish", nil, nil)
 	require.NotEmpty(t, id)
 	r, deps, typ, args, err = q.Dequeue(context.Background(), []string{"clownfish"})
@@ -250,7 +250,7 @@ func testCancel(t *testing.T, q jobqueue.JobQueue) {
 	err = q.FinishJob(id, &testResult{})
 	require.NoError(t, err)
 	err = q.CancelJob(id)
-	require.NoError(t, err)
+	require.Error(t, err)
 	result, _, _, _, canceled, _, err = q.JobStatus(id)
 	require.NoError(t, err)
 	require.False(t, canceled)

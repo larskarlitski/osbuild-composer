@@ -258,7 +258,7 @@ func (q *fsJobQueue) CancelJob(id uuid.UUID) error {
 	}
 
 	if !j.FinishedAt.IsZero() {
-		return nil
+		return jobqueue.ErrNotRunning
 	}
 
 	j.Canceled = true
